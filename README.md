@@ -1,1 +1,1 @@
-# 21.11.20 back-end assist
+# 21.11.20 express.js + sqlite + passport.js 기반 간단 백엔드
