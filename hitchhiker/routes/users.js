@@ -4,6 +4,9 @@ var router = express.Router();
 const User = require('../model/User');
 const bcrypt = require('bcryptjs');
 
+const jwt = require('../my_utils/jwt-util');
+// const redisClient = require('../my_utils/redis');
+
 //회원가입
 router.post('/', async (req, res) => {
 	let { password, email } = req.body;
@@ -40,6 +43,10 @@ router.post('/login', async (req, res) => {
 //유저들조회
 router.get('/', async (req, res) => {
 	try {
+
+
+		// 발급한 refresh token을 redis에 key를 user의 id로 하여 저장합니다.
+		// redisClient.set(user.id, refreshToken);
 		const users = await User.findAll();
 		let data = users.map((user) => {
 			let editUser = {};
@@ -47,6 +54,10 @@ router.get('/', async (req, res) => {
 			editUser.username = user.username;
 			editUser.email = user.email;
 			editUser.progress = user.progress;
+			// const accessToken = jwt.sign(user.id);
+			// const refreshToken = jwt.refresh();
+			editUser.at = jwt.sign(editUser.id);
+			// editUser.rt = refreshToken;
 			return editUser;
 		});
 		res.send(data);
