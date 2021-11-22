@@ -9,6 +9,8 @@ var usersRouter = require('./routes/users');
 var contentRouter = require('./routes/content');
 
 const sequelize = require('./database');
+const session = require('express-session');
+var SequelizeStore = require("connect-session-sequelize")(session.Store);
 
 var app = express();
 
@@ -23,6 +25,16 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use('/static', express.static(path.join(__dirname, 'public')));
 
+app.use(
+	session({
+		secret: "keyboard cat",
+		store: new SequelizeStore({
+			db: sequelize,
+		}),
+		resave: false, 
+		saveUninitialized: true,
+	})
+);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/content', contentRouter);
