@@ -14,13 +14,10 @@ router.post('/', async (req, res, next) => {
 		const salt = await bcrypt.genSalt(10);
 		req.body.password = await bcrypt.hash(password, salt);
 		let userCreate = await User.create(req.body);
-		if (userCreate) return res.status(200).send('user is inserted');
+		if (userCreate) return res.send('user is inserted');
 		else return res.status(204).send({ error: 'fail to create user' });
-	} catch (e) {
-		res.status(400).send(e)
-	}
+	} catch { }
 });
-
 //로그인
 router.post('/login', async (req, res, next) => {
 	let { password, email } = req.body;
@@ -31,21 +28,18 @@ router.post('/login', async (req, res, next) => {
 		if (check) {
 
 			req.session.isLoggedIn = true;
-			req.session.email = email; //126번줄 테스트용
-			req.session.save(() => {
-				let data = {};
-				data.id = userExistence.id;
-				data.username = userExistence.username;
-				data.email = userExistence.email;
-				data.progress = userExistence.progress;
-				res.status(200).send(data);
-			 });
+			req.session.email = email;
+		
+			let data = {};
+			data.id = userExistence.id;
+			data.username = userExistence.username;
+			data.email = userExistence.email;
+			data.progress = userExistence.progress;
+			res.send(data);
 		} else {
 			res.status(204).send({ error: 'fail to login' });
 		}
-	} catch (e) {
-		res.status(400).send(e)
-	}
+	} catch { }
 });
 //유저들조회
 router.get('/', async (req, res, next) => {
@@ -59,10 +53,8 @@ router.get('/', async (req, res, next) => {
 			editUser.progress = user.progress;
 			return editUser;
 		});
-		res.status(200).send(data);
-	} catch (e) {
-		res.status(400).send(e)
-	}
+		res.send(data);
+	} catch { }
 });
 //유저조회
 router.get('/:id', async (req, res, next) => {
@@ -75,62 +67,43 @@ router.get('/:id', async (req, res, next) => {
 		data.username = userFind.username;
 		data.email = userFind.email;
 		data.progress = userFind.progress;
-		res.status(200).send(data);
-	} catch (e){
-		res.status(400).send(e)
-	}
+		res.send(data);
+	} catch { }
 });
 
 //유저 progress 플러스 수정
-router.put('/:id', async (req, res, next) => {
-	try {
-		if (req.session.isLoggedIn == true) {
-			const paramId = req.params.id;
-			const user = await User.findOne({ where: { id: paramId } });
-			user.progress = user.progress + 1;
-			await user.save();
-			res.status(200).send('updated user progress');
-		} else {
-			res.status(204).send('not valid session');
-		}
-	} catch (e) {
-		res.status(400).send(e)
+router.put('/plus', async (req, res, next) => {
+	if (req.sessionID) {
+		let { email } = req.body;
+		const user = await User.findOne({ where: { email: email } });
+		user.progress = user.progress + 1;
+		await user.save();
+		res.send('updated user progress');
 	}
 });
 
 //유저 progress 마이너스 수정
-router.put('/:id', async (req, res, next) => {
-	try {
-	if (req.session.isLoggedIn == true) {
-		const paramId = req.params.id;
-		const user = await User.findOne({ where: { id: paramId } });
+router.put('/minus', async (req, res, next) => {
+	if (req.sessionID) {
+		const user = await User.findOne({ where: { email: email } });
 		if (user.progess > 0) {
 			user.progress = user.progress - 1;
 			await user.save();
-			res.status(200).send('updated user progress');
+			res.send('updated user progress');
 		} else {
-			res.status(204).send('user progress is less than 0');
+			res.send('user progress is less than 0');
 		}
-	} else {
-		res.status(204).send('not valid session');
-	}
-	} catch (e) {
-		res.status(400).send(e)
 	}
 });
 
 
 router.delete('/logout', async (req, res, next) => {
-	try {
-	if (req.session.isLoggedIn == true) {
-		// console.log('로그아웃하는 이메일=>', req.session.email); [테스트]특정 계정 로그인 후 로그아웃 하시면 그 계정 확인가능합니다. 
+	if (req.sessionID) {
+		// console.log('로그아웃하는 이메일=>', req.session.email); test 해보시면 ㄹ
 		req.session.destroy();
-		res.status(200).send('logout user');
+		res.send('logout user');
 	} else {
-		res.status(204).send('not valid session');
-	}
-	} catch (e) {
-		res.status(400).send(e)
+		res.send('no existence logout user');
 	}
 })
 
@@ -138,7 +111,7 @@ router.delete('/logout', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
 	const paramId = req.params.id;
 	await User.destroy({ where: { id: paramId } });
-	res.status(200).send('removed user');
+	res.send('removed user');
 });
 
 module.exports = router;
