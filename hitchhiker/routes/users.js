@@ -28,14 +28,14 @@ router.post('/login', async (req, res, next) => {
 		if (check) {
 
 			req.session.isLoggedIn = true;
-			req.session.email = email;
-		
-			let data = {};
-			data.id = userExistence.id;
-			data.username = userExistence.username;
-			data.email = userExistence.email;
-			data.progress = userExistence.progress;
-			res.send(data);
+			req.session.save(() => {
+				let data = {};
+				data.id = userExistence.id;
+				data.username = userExistence.username;
+				data.email = userExistence.email;
+				data.progress = userExistence.progress;
+				res.send(data);
+			})
 		} else {
 			res.status(204).send({ error: 'fail to login' });
 		}
@@ -73,7 +73,7 @@ router.get('/:id', async (req, res, next) => {
 
 //유저 progress 플러스 수정
 router.put('/plus', async (req, res, next) => {
-	if (req.sessionID) {
+	if (req.session.isLoggedIn == true) {
 		let { email } = req.body;
 		const user = await User.findOne({ where: { email: email } });
 		user.progress = user.progress + 1;
@@ -84,7 +84,8 @@ router.put('/plus', async (req, res, next) => {
 
 //유저 progress 마이너스 수정
 router.put('/minus', async (req, res, next) => {
-	if (req.sessionID) {
+	if (req.session.isLoggedIn == true) {
+		let { email } = req.body;
 		const user = await User.findOne({ where: { email: email } });
 		if (user.progess > 0) {
 			user.progress = user.progress - 1;
@@ -98,10 +99,12 @@ router.put('/minus', async (req, res, next) => {
 
 
 router.delete('/logout', async (req, res, next) => {
-	if (req.sessionID) {
+	if (req.session.isLoggedIn == true) {
 		// console.log('로그아웃하는 이메일=>', req.session.email); test 해보시면 ㄹ
 		req.session.destroy();
-		res.send('logout user');
+		req.session.save(() => {
+			res.send('logout user');
+		})
 	} else {
 		res.send('no existence logout user');
 	}
@@ -111,6 +114,7 @@ router.delete('/logout', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
 	const paramId = req.params.id;
 	await User.destroy({ where: { id: paramId } });
+
 	res.send('removed user');
 });
 
